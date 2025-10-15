@@ -138,6 +138,37 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
     return {"success": True, "data": {"detail": "Deleted"}}
 
 
+@router.post("/restaurant/categories/{category_id}/upload-image", response_model=dict, summary="Upload category image")
+def upload_category_image(
+    category_id: int,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    category = db.query(models.Category).get(category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    if image.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+
+    uploads_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+    os.makedirs(uploads_root, exist_ok=True)
+
+    ext = os.path.splitext(image.filename or "")[1].lower() or ".jpg"
+    filename = f"category_{category.id}_{int(datetime.utcnow().timestamp())}{ext}"
+    filepath = os.path.join(uploads_root, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(image.file.read())
+
+    category.image_url = f"/uploads/{filename}"
+    db.commit()
+    db.refresh(category)
+
+    data = schemas.CategoryResponse.model_validate(category).model_dump()
+    return {"success": True, "data": data}
+
+
 # Menu items for my restaurant
 @router.post("/restaurant/menu")
 def create_menu_item(
@@ -155,6 +186,44 @@ def create_menu_item(
     # Convert SQLAlchemy model to Pydantic schema for proper serialization
     item_data = schemas.MenuItemResponse.model_validate(item).model_dump()
     return {"success": True, "data": item_data}
+
+
+@router.post("/restaurant/menu/{item_id}/upload-image", response_model=dict, summary="Upload menu item image")
+def upload_menu_item_image(
+    item_id: int,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    restaurant = get_my_restaurant(db, current_user.id)
+    if not restaurant:
+        raise HTTPException(status_code=400, detail="Create restaurant first")
+    item = (
+        db.query(models.MenuItem)
+        .filter(models.MenuItem.id == item_id, models.MenuItem.restaurant_id == restaurant.id)
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Menu item not found")
+    if image.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+
+    uploads_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+    os.makedirs(uploads_root, exist_ok=True)
+
+    ext = os.path.splitext(image.filename or "")[1].lower() or ".jpg"
+    filename = f"menuitem_{item.id}_{int(datetime.utcnow().timestamp())}{ext}"
+    filepath = os.path.join(uploads_root, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(image.file.read())
+
+    item.image_url = f"/uploads/{filename}"
+    db.commit()
+    db.refresh(item)
+
+    data = schemas.MenuItemResponse.model_validate(item).model_dump()
+    return {"success": True, "data": data}
 
 
 @router.get("/restaurant/menu")
