@@ -82,6 +82,7 @@ class Restaurant(Base):
     cuisine_type = Column(String(100))
     phone_number = Column(String(20))
     email = Column(String(255))
+    image_url = Column(String(500))
     unique_code = Column(String(32), unique=True, index=True)
     store_size = Column(Enum(StoreSize), default=StoreSize.SMALL, nullable=False)
     address_line1 = Column(String(255), nullable=False)

@@ -8,7 +8,7 @@ from app.logger import get_logger
 router = APIRouter()
 logger = get_logger(__name__)
 
-@router.post("/", response_model=schemas.RestaurantResponse)
+@router.post("/")
 def create_restaurant(payload: schemas.RestaurantCreate, db: Session = Depends(get_db)):
     owner = db.query(models.User).first()
     if not owner:
@@ -21,9 +21,9 @@ def create_restaurant(payload: schemas.RestaurantCreate, db: Session = Depends(g
     db.add(restaurant)
     db.commit()
     db.refresh(restaurant)
-    return restaurant
+    return {"success": True, "data": restaurant}
 
-@router.get("/", response_model=List[schemas.RestaurantResponse])
+@router.get("/")
 def list_restaurants(
     city: Optional[str] = None,
     cuisine: Optional[str] = Query(None, alias="cuisine_type"),
@@ -34,16 +34,17 @@ def list_restaurants(
         query = query.filter(models.Restaurant.city.ilike(f"%{city}%"))
     if cuisine:
         query = query.filter(models.Restaurant.cuisine_type.ilike(f"%{cuisine}%"))
-    return query.order_by(models.Restaurant.rating.desc()).all()
+    items = query.order_by(models.Restaurant.rating.desc()).all()
+    return {"success": True, "data": items}
 
-@router.get("/{restaurant_id}", response_model=schemas.RestaurantResponse)
+@router.get("/{restaurant_id}")
 def get_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
     restaurant = db.query(models.Restaurant).get(restaurant_id)
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    return restaurant
+    return {"success": True, "data": restaurant}
 
-@router.patch("/{restaurant_id}", response_model=schemas.RestaurantResponse)
+@router.patch("/{restaurant_id}")
 def update_restaurant(restaurant_id: int, payload: schemas.RestaurantUpdate, db: Session = Depends(get_db)):
     restaurant = db.query(models.Restaurant).get(restaurant_id)
     if not restaurant:
@@ -53,7 +54,7 @@ def update_restaurant(restaurant_id: int, payload: schemas.RestaurantUpdate, db:
         setattr(restaurant, k, v)
     db.commit()
     db.refresh(restaurant)
-    return restaurant
+    return {"success": True, "data": restaurant}
 
 @router.delete("/{restaurant_id}")
 def delete_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
@@ -62,6 +63,6 @@ def delete_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Restaurant not found")
     db.delete(restaurant)
     db.commit()
-    return {"detail": "Deleted"}
+    return {"success": True, "data": {"detail": "Deleted"}}
 
 

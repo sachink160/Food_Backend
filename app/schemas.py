@@ -42,6 +42,7 @@ class UserUpdate(BaseSchema):
 class UserResponse(UserBase):
     id: int
     role: UserRole
+    roles: List[UserRole]
     is_active: bool
     is_verified: bool
     created_at: datetime
@@ -91,6 +92,7 @@ class RestaurantBase(BaseSchema):
     cuisine_type: Optional[str] = Field(None, max_length=100)
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
+    image_url: Optional[str] = Field(None, max_length=500)
     address_line1: str = Field(..., min_length=1, max_length=255)
     address_line2: Optional[str] = Field(None, max_length=255)
     city: str = Field(..., min_length=1, max_length=100)
@@ -113,6 +115,7 @@ class RestaurantUpdate(BaseSchema):
     cuisine_type: Optional[str] = Field(None, max_length=100)
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
+    image_url: Optional[str] = Field(None, max_length=500)
     address_line1: Optional[str] = Field(None, min_length=1, max_length=255)
     address_line2: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, min_length=1, max_length=100)

@@ -8,7 +8,7 @@ from app import models, schemas
 router = APIRouter()
 
 
-@router.get("/nearby", response_model=List[schemas.RestaurantResponse])
+@router.get("/nearby")
 def search_nearby(
     lat: float,
     lng: float,
@@ -26,36 +26,38 @@ def search_nearby(
         .filter(models.Restaurant.longitude.between(lng - lng_delta, lng + lng_delta))
         .order_by(models.Restaurant.rating.desc())
     )
-    return q.all()
+    return {"success": True, "data": q.all()}
 
 
-@router.get("/popular", response_model=List[schemas.RestaurantResponse])
+@router.get("/popular")
 def search_popular(limit: int = Query(default=20, ge=1, le=100), db: Session = Depends(get_db)):
-    return (
+    items = (
         db.query(models.Restaurant)
         .filter(models.Restaurant.is_active == True)
         .order_by(models.Restaurant.rating.desc(), models.Restaurant.total_reviews.desc())
         .limit(limit)
         .all()
     )
+    return {"success": True, "data": items}
 
 
-@router.get("/new", response_model=List[schemas.RestaurantResponse])
+@router.get("/new")
 def search_new(limit: int = Query(default=20, ge=1, le=100), db: Session = Depends(get_db)):
-    return (
+    items = (
         db.query(models.Restaurant)
         .filter(models.Restaurant.is_active == True)
         .order_by(models.Restaurant.created_at.desc())
         .limit(limit)
         .all()
     )
+    return {"success": True, "data": items}
 
 
-@router.get("/code/{unique_code}", response_model=schemas.RestaurantResponse)
+@router.get("/code/{unique_code}")
 def get_by_unique_code(unique_code: str, db: Session = Depends(get_db)):
     restaurant = db.query(models.Restaurant).filter(models.Restaurant.unique_code == unique_code).first()
     if not restaurant:
         raise HTTPException(status_code=404, detail="Not found")
-    return restaurant
+    return {"success": True, "data": restaurant}
 
 

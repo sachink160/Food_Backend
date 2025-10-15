@@ -93,3 +93,16 @@ def test_connection():
     except Exception as e:
         logger.error(f"Database connection test failed: {e}")
         return False
+
+def migrate_schema():
+    """Run minimal migrations for incremental schema changes."""
+    try:
+        with engine.begin() as connection:
+            # Add image_url to restaurants if it does not exist (PostgreSQL syntax)
+            connection.execute(
+                text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);")
+            )
+        logger.info("Schema migration completed successfully")
+    except Exception as e:
+        logger.error(f"Schema migration failed: {e}")
+        raise
